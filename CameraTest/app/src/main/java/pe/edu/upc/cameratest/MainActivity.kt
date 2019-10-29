@@ -7,6 +7,7 @@ import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -25,9 +26,9 @@ import java.io.File
 class MainActivity : AppCompatActivity() {
 
     var fotoapparat: Fotoapparat? = null
-    val filename =  "test.png"
+    var filename =  "test.png"
     val sd = Environment.getExternalStorageDirectory()
-    val dest = File(sd, filename)
+    //val dest = File(sd, filename)
     var fotoapparatState : FotoapparatState? = null
     var cameraStatus : CameraState? = null
     var flashState: FlashState? = null
@@ -45,6 +46,8 @@ class MainActivity : AppCompatActivity() {
         fotoapparatState = FotoapparatState.OFF
 
         fab_camera.setOnClickListener {
+            filename = tvCodigo.text.toString().trim() + ".png"
+            Toast.makeText(this, filename.toString(), Toast.LENGTH_LONG).show()
             takePhoto()
         }
 
@@ -101,7 +104,7 @@ class MainActivity : AppCompatActivity() {
         }else{
             fotoapparat
                 ?.takePicture()
-                ?.saveToFile(dest)
+                ?.saveToFile(File(sd,filename))
         }
     }
 
