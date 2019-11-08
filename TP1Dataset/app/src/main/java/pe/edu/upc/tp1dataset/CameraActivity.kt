@@ -1,6 +1,8 @@
 package pe.edu.upc.tp1dataset
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -21,45 +23,28 @@ import io.fotoapparat.view.CameraView
 import kotlinx.android.synthetic.main.activity_camera.*
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
+import androidx.core.app.ComponentActivity.ExtraData
+import androidx.core.content.ContextCompat.getSystemService
+import android.icu.lang.UCharacter.GraphemeClusterBreak.T
+
+
 
 class CameraActivity : AppCompatActivity() {
 
     var fotoapparat: Fotoapparat? = null
-    var filename =  "test.png"
+    var filename = "test.png"
     val sd = Environment.getExternalStorageDirectory()
-    //val dest = File(sd, filename)
-    var fotoapparatState : FotoapparatState? = null
-    var cameraStatus : CameraState? = null
+    var fotoapparatState: FotoapparatState? = null
+    var cameraStatus: CameraState? = null
     var flashState: FlashState? = null
 
-    val permissions = arrayOf(android.Manifest.permission.CAMERA, android.Manifest.permission.WRITE_EXTERNAL_STORAGE, android.Manifest.permission.READ_EXTERNAL_STORAGE)
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_camera)
-
-        createFotoapparat()
-
-        cameraStatus = CameraState.BACK
-        flashState = FlashState.OFF
-        fotoapparatState = FotoapparatState.OFF
-
-        fab_camera.setOnClickListener {
-            filename = tvCodigo.text.toString().trim() + ".png"
-            Toast.makeText(this, filename.toString(), Toast.LENGTH_LONG).show()
-            takePhoto()
-        }
-
-        fab_switch_camera.setOnClickListener {
-            switchCamera()
-        }
-
-        fab_flash.setOnClickListener {
-            changeFlashState()
-        }
+    override fun onStart() {
+        super.onStart()
+        fotoapparat?.start()
+        fotoapparatState = FotoapparatState.ON
     }
 
-    private fun createFotoapparat(){
+    private fun createFotoapparat() {
         val cameraView = findViewById<CameraView>(R.id.camera_view)
 
         fotoapparat = Fotoapparat(
@@ -76,56 +61,73 @@ class CameraActivity : AppCompatActivity() {
         )
     }
 
-    private fun changeFlashState() {
-        fotoapparat?.updateConfiguration(
-            CameraConfiguration(
-                flashMode = if(flashState == FlashState.TORCH) off() else torch()
-            )
-        )
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_camera)
 
-        if(flashState == FlashState.TORCH) flashState = FlashState.OFF
-        else flashState = FlashState.TORCH
+        val sharedPreferences = getSharedPreferences("SP_INFO", Context.MODE_PRIVATE)
+
+        createFotoapparat()
+
+        cameraStatus = CameraState.BACK
+        flashState = FlashState.OFF
+        fotoapparatState = FotoapparatState.OFF
+
+        fab_camera.setOnClickListener {
+            filename = tvCodigo.text.toString().trim() + ".png"
+
+            val editor = sharedPreferences.edit()
+            editor.putString("FILENAME ", filename)
+            editor.apply()
+            takePhoto()
+
+        }
+
+        fab_switch_camera.setOnClickListener {
+            switchCamera()
+        }
+
+        fab_flash.setOnClickListener {
+            changeFlashState()
+        }
+
+        fab_upload.setOnClickListener {
+            //Toast.makeText(this,"WORKS", Toast.LENGTH_LONG).show()
+
+            val resultIntent = Intent()
+            resultIntent.putExtra("filename", filename)
+
+            setResult(RESULT_OK, resultIntent);
+            finish();
+
+        }
+    }
+
+    private fun takePhoto() {
+        fotoapparat
+            ?.takePicture()
+            ?.saveToFile(File(sd, filename))
     }
 
     private fun switchCamera() {
         fotoapparat?.switchTo(
-            lensPosition =  if (cameraStatus == CameraState.BACK) front() else back(),
+            lensPosition = if (cameraStatus == CameraState.BACK) front() else back(),
             cameraConfiguration = CameraConfiguration()
         )
 
-        if(cameraStatus == CameraState.BACK) cameraStatus = CameraState.FRONT
+        if (cameraStatus == CameraState.BACK) cameraStatus = CameraState.FRONT
         else cameraStatus = CameraState.BACK
     }
 
-    private fun takePhoto() {
-        if (hasNoPermissions()) {
-            requestPermission()
-        }else{
-            fotoapparat
-                ?.takePicture()
-                ?.saveToFile(File(sd,filename))
-        }
-    }
+    private fun changeFlashState() {
+        fotoapparat?.updateConfiguration(
+            CameraConfiguration(
+                flashMode = if (flashState == FlashState.TORCH) off() else torch()
+            )
+        )
 
-    override fun onStart() {
-        super.onStart()
-        if (hasNoPermissions()) {
-            requestPermission()
-        }else{
-            fotoapparat?.start()
-            fotoapparatState = FotoapparatState.ON
-        }
-    }
-
-    private fun hasNoPermissions(): Boolean{
-        return ContextCompat.checkSelfPermission(this,
-            Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this,
-            Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
-    }
-
-    fun requestPermission(){
-        ActivityCompat.requestPermissions(this, permissions,0)
+        if (flashState == FlashState.TORCH) flashState = FlashState.OFF
+        else flashState = FlashState.TORCH
     }
 
     override fun onStop() {
@@ -134,24 +136,16 @@ class CameraActivity : AppCompatActivity() {
         FotoapparatState.OFF
     }
 
-    override fun onResume() {
-        super.onResume()
-        if(!hasNoPermissions() && fotoapparatState == FotoapparatState.OFF){
-            val intent = Intent(baseContext, MainActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
-    }
 }
 
-enum class CameraState{
+enum class CameraState {
     FRONT, BACK
 }
 
-enum class FlashState{
+enum class FlashState {
     TORCH, OFF
 }
 
-enum class FotoapparatState{
+enum class FotoapparatState {
     ON, OFF
 }
