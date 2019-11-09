@@ -83,7 +83,7 @@ class CameraActivity : AppCompatActivity() {
                     Toast.makeText(this, "Ingrese su codigo de forma correcta.", Toast.LENGTH_LONG)
                         .show()
                 } else {
-                    filename = tvCodigo.text.toString().trim() + ".png"
+                    filename = tvCodigo.text.toString().trim() + ".jpg"
                     takePhoto()
                 }
         }
@@ -95,11 +95,6 @@ class CameraActivity : AppCompatActivity() {
         fab_flash.setOnClickListener {
             changeFlashState()
         }
-
-        btnSend.setOnClickListener {
-            val mainIntent = Intent(this, MainActivity::class.java)
-            startActivity(mainIntent)
-        }
     }
 
     private fun takePhoto() {
@@ -109,11 +104,11 @@ class CameraActivity : AppCompatActivity() {
             ?.takePicture()
             ?.saveToFile(File(sd, filename))?.whenAvailable {
 
-                Toast.makeText(
+               /* Toast.makeText(
                     this,
                     "/storage/emulated/0/Download/" + filename.toString(),
                     Toast.LENGTH_LONG
-                ).show()
+                ).show()*/
 
                 val intent = Intent(this, ImageViewActivity::class.java)
                 intent.putExtra("Filename", filename)
