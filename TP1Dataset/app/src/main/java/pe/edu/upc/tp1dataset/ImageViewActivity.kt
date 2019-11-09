@@ -48,11 +48,11 @@ class ImageViewActivity : AppCompatActivity() {
 
         if(imgfile.exists()){
 
-            Toast.makeText(this, "Si existe", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Enviando... ", Toast.LENGTH_LONG).show()
             val myBitmap = BitmapFactory.decodeFile(imgfile.getAbsolutePath())
 
 
-           var degrees: Float = (90).toFloat()
+           var degrees: Float = (270).toFloat()
             val matrix = Matrix()
             matrix.postRotate(degrees);
 
